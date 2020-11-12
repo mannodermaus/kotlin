@@ -21,6 +21,7 @@ public final class KlibMetadataProtoBuf {
     registry.add(org.jetbrains.kotlin.library.metadata.KlibMetadataProtoBuf.propertySetterAnnotation);
     registry.add(org.jetbrains.kotlin.library.metadata.KlibMetadataProtoBuf.compileTimeValue);
     registry.add(org.jetbrains.kotlin.library.metadata.KlibMetadataProtoBuf.propertyFile);
+    registry.add(org.jetbrains.kotlin.library.metadata.KlibMetadataProtoBuf.propertyKdoc);
     registry.add(org.jetbrains.kotlin.library.metadata.KlibMetadataProtoBuf.propertyUniqId);
     registry.add(org.jetbrains.kotlin.library.metadata.KlibMetadataProtoBuf.enumEntryAnnotation);
     registry.add(org.jetbrains.kotlin.library.metadata.KlibMetadataProtoBuf.enumEntryOrdinal);
@@ -2737,6 +2738,22 @@ public final class KlibMetadataProtoBuf {
         176,
         org.jetbrains.kotlin.protobuf.WireFormat.FieldType.INT32,
         java.lang.Integer.class);
+  public static final int PROPERTY_KDOC_FIELD_NUMBER = 180;
+  /**
+   * <code>extend .org.jetbrains.kotlin.metadata.Property { ... }</code>
+   */
+  public static final
+  org.jetbrains.kotlin.protobuf.GeneratedMessageLite.GeneratedExtension<
+          org.jetbrains.kotlin.metadata.ProtoBuf.Property,
+          java.lang.String> propertyKdoc = org.jetbrains.kotlin.protobuf.GeneratedMessageLite
+          .newSingularGeneratedExtension(
+                  org.jetbrains.kotlin.metadata.ProtoBuf.Property.getDefaultInstance(),
+                  "",
+                  null,
+                  null,
+                  180,
+                  org.jetbrains.kotlin.protobuf.WireFormat.FieldType.STRING,
+                  java.lang.String.class);
   public static final int PROPERTY_UNIQ_ID_FIELD_NUMBER = 179;
   /**
    * <code>extend .org.jetbrains.kotlin.metadata.Property { ... }</code>

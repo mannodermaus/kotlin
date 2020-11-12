@@ -19,6 +19,13 @@ import org.jetbrains.kotlin.serialization.StringTableImpl
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
 
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithSource
+import org.jetbrains.kotlin.kdoc.psi.impl.KDocTag
+import org.jetbrains.kotlin.psi.KtDeclaration
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.resolve.source.getPsi
+
 class KlibMetadataSerializerExtension(
     private val languageVersionSettings: LanguageVersionSettings,
     override val metadataVersion: BinaryVersion,
@@ -58,6 +65,9 @@ class KlibMetadataSerializerExtension(
         childSerializer: DescriptorSerializer
     ) {
         descriptorFileId(descriptor)?.let { proto.setExtension(KlibMetadataProtoBuf.propertyFile, it) }
+
+//        private fun KDocTag.render(): String = parent.text
+        descriptor.findKDoc()?.let { proto.setExtension(KlibMetadataProtoBuf.propertyKdoc, it.render()) }
         super.serializeProperty(descriptor, proto, versionRequirementTable, childSerializer)
     }
 
@@ -73,4 +83,22 @@ class KlibMetadataSerializerExtension(
 
     override fun releaseCoroutines() =
         languageVersionSettings.supportsFeature(LanguageFeature.ReleaseCoroutines)
+}
+
+
+private fun KDocTag.render(): String = parent.text
+
+private fun DeclarationDescriptor.findKDoc(): KDocTag? {
+    if (this is DeclarationDescriptorWithSource) {
+        val psi = source.getPsi()
+        if (psi is KtDeclaration) {
+            if (psi is KtPrimaryConstructor)
+                return null  // to be rendered with class itself
+            val kdoc = psi.docComment
+            if (kdoc != null) {
+                return kdoc.getDefaultSection()
+            }
+        }
+    }
+    return null
 }
