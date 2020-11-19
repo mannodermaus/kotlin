@@ -22,6 +22,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiRecursiveElementVisitor
 import org.jetbrains.kotlin.psi.KtFile
 
+@Suppress("UnstableApiUsage")
 class KotlinBeforeResolveHighlightingPass(
     private val file: KtFile,
     document: Document
@@ -34,23 +35,26 @@ class KotlinBeforeResolveHighlightingPass(
         val annotationHolder = AnnotationHolderImpl(AnnotationSession(file))
         val visitor = BeforeResolveHighlightingVisitor(annotationHolder)
         val extensions = EP_NAME.extensionList.map { it.createVisitor(annotationHolder) }
-        file.accept(object : PsiRecursiveElementVisitor() {
-            override fun visitElement(element: PsiElement) {
-                super.visitElement(element)
-                element.accept(visitor)
-                extensions.forEach(element::accept)
-            }
-        })
+        annotationHolder.runAnnotatorWithContext(file) { element, _ ->
+            element.accept(object : PsiRecursiveElementVisitor() {
+                override fun visitElement(element: PsiElement) {
+                    super.visitElement(element)
+                    element.accept(visitor)
+                    extensions.forEach(element::accept)
+                }
+            })
+        }
         this.annotationHolder = annotationHolder
     }
 
     override fun doApplyInformationToEditor() {
-        if (annotationHolder == null) return
+        try {
+            val infos = annotationHolder?.map { HighlightInfo.fromAnnotation(it) } ?: return
 
-        val infos = annotationHolder!!.map { HighlightInfo.fromAnnotation(it) }
-
-        UpdateHighlightersUtil.setHighlightersToEditor(myProject, myDocument!!, 0, file.textLength, infos, colorsScheme, id)
-        annotationHolder = null
+            UpdateHighlightersUtil.setHighlightersToEditor(myProject, myDocument, 0, file.textLength, infos, colorsScheme, id)
+        } finally {
+            annotationHolder = null
+        }
     }
 
     class Factory : TextEditorHighlightingPassFactory {

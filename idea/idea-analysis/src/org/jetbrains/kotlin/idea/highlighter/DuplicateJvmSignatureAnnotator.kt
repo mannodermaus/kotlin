@@ -36,15 +36,15 @@ class DuplicateJvmSignatureAnnotator : Annotator {
         val file = element.containingFile
         if (file !is KtFile || !TargetPlatformDetector.getPlatform(file).isJvm()) return
 
-        val otherDiagnostics = when (element) {
-            is KtDeclaration -> element.analyzeWithContent()
-            is KtFile -> element.analyzeWithContent()
-            else -> throw AssertionError("DuplicateJvmSignatureAnnotator: should not get here! Element: ${element.text}")
-        }.diagnostics
-
-        val moduleScope = element.getModuleInfo().contentScope()
-        val diagnostics = getJvmSignatureDiagnostics(element, otherDiagnostics, moduleScope) ?: return
-
-        KotlinPsiChecker().annotateElement(element, holder, diagnostics)
+//        val otherDiagnostics = when (element) {
+//            is KtDeclaration -> element.analyzeWithContent()
+//            is KtFile -> element.analyzeWithContent()
+//            else -> throw AssertionError("DuplicateJvmSignatureAnnotator: should not get here! Element: ${element.text}")
+//        }.diagnostics
+//
+//        val moduleScope = element.getModuleInfo().contentScope()
+//        val diagnostics = getJvmSignatureDiagnostics(element, otherDiagnostics, moduleScope) ?: return
+//
+//        KotlinPsiChecker().annotateElement(element, holder, diagnostics)
     }
 }

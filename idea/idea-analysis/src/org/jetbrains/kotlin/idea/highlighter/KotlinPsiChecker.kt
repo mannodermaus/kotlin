@@ -6,32 +6,21 @@
 package org.jetbrains.kotlin.idea.highlighter
 
 import com.intellij.codeInsight.intention.IntentionAction
-import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.lang.annotation.AnnotationHolder
-import com.intellij.openapi.diagnostic.ControlFlowException
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.editor.colors.CodeInsightColors
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.util.Key
-import com.intellij.psi.MultiRangeReference
 import com.intellij.psi.PsiElement
 import com.intellij.util.containers.MultiMap
-import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
-import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.idea.caches.resolve.analyzeWithAllCompilerChecks
 import org.jetbrains.kotlin.idea.quickfix.QuickFixes
-import org.jetbrains.kotlin.idea.references.mainReference
-import org.jetbrains.kotlin.idea.util.module
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.psi.KtReferenceExpression
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 import org.jetbrains.kotlin.types.KotlinType
 import java.lang.reflect.*
@@ -52,37 +41,31 @@ open class KotlinPsiChecker : AbstractKotlinPsiChecker() {
 
         val bindingContext = analysisResult.bindingContext
 
-        getAfterAnalysisVisitor(holder, bindingContext).forEach { visitor -> element.accept(visitor) }
-
         annotateElement(element, holder, bindingContext.diagnostics)
     }
 
     protected open fun shouldSuppressUnusedParameter(parameter: KtParameter): Boolean = false
 
-    fun annotateElement(element: PsiElement, holder: AnnotationHolder, diagnostics: Diagnostics) {
-        val diagnosticsForElement = diagnostics.forElement(element).toSet()
+    private fun annotateElement(element: PsiElement, holder: AnnotationHolder, diagnostics: Diagnostics) {
+        annotateElement(element, holder, diagnostics.forElement(element).toSet())
+    }
+
+    private fun annotateElement(element: PsiElement, holder: AnnotationHolder, diagnosticsForElement: Collection<Diagnostic>) {
+        if (diagnosticsForElement.isEmpty()) return
 
         if (element is KtNameReferenceExpression) {
-            val unresolved = diagnostics.any { it.factory == Errors.UNRESOLVED_REFERENCE }
+            val unresolved = diagnosticsForElement.any { it.factory == Errors.UNRESOLVED_REFERENCE }
             element.putUserData(UNRESOLVED_KEY, if (unresolved) Unit else null)
         }
 
-        if (diagnosticsForElement.isEmpty()) return
-
         if (KotlinHighlightingUtil.shouldHighlightErrors(element)) {
-            ElementAnnotator(element, holder) { param ->
+            ElementAnnotator(element) { param ->
                 shouldSuppressUnusedParameter(param)
-            }.registerDiagnosticsAnnotations(diagnosticsForElement)
+            }.registerDiagnosticsAnnotations(holder, diagnosticsForElement, false)
         }
     }
 
     companion object {
-        fun getAfterAnalysisVisitor(holder: AnnotationHolder, bindingContext: BindingContext) = arrayOf(
-            PropertiesHighlightingVisitor(holder, bindingContext),
-            FunctionsHighlightingVisitor(holder, bindingContext),
-            VariablesHighlightingVisitor(holder, bindingContext),
-            TypeKindHighlightingVisitor(holder, bindingContext)
-        )
 
         fun createQuickFixes(diagnostic: Diagnostic): Collection<IntentionAction> =
             createQuickFixes(listOfNotNull(diagnostic))[diagnostic]
@@ -93,7 +76,7 @@ open class KotlinPsiChecker : AbstractKotlinPsiChecker() {
     }
 }
 
-private fun createQuickFixes(similarDiagnostics: Collection<Diagnostic>): MultiMap<Diagnostic, IntentionAction> {
+internal fun createQuickFixes(similarDiagnostics: Collection<Diagnostic>): MultiMap<Diagnostic, IntentionAction> {
     val first = similarDiagnostics.minByOrNull { it.toString() }
     val factory = similarDiagnostics.first().getRealDiagnosticFactory()
 
@@ -173,115 +156,4 @@ private object NoDeclarationDescriptorsChecker {
     }
 }
 
-private class ElementAnnotator(
-    private val element: PsiElement,
-    private val holder: AnnotationHolder,
-    private val shouldSuppressUnusedParameter: (KtParameter) -> Boolean
-) {
-    fun registerDiagnosticsAnnotations(diagnostics: Collection<Diagnostic>) {
-        diagnostics.groupBy { it.factory }.forEach { group -> registerDiagnosticAnnotations(group.value) }
-    }
-
-    private fun registerDiagnosticAnnotations(diagnostics: List<Diagnostic>) {
-        assert(diagnostics.isNotEmpty())
-
-        val validDiagnostics = diagnostics.filter { it.isValid }
-        if (validDiagnostics.isEmpty()) return
-
-        val diagnostic = diagnostics.first()
-        val factory = diagnostic.factory
-
-        // hack till the root cause #KT-21246 is fixed
-        if (isIrCompileClassDiagnosticForModulesWithEnabledIR(diagnostic)) return
-
-        assert(diagnostics.all { it.psiElement == element && it.factory == factory })
-
-        val ranges = diagnostic.textRanges
-
-        val presentationInfo: AnnotationPresentationInfo = when (factory.severity) {
-            Severity.ERROR -> {
-                when (factory) {
-                    in Errors.UNRESOLVED_REFERENCE_DIAGNOSTICS -> {
-                        val referenceExpression = element as KtReferenceExpression
-                        val reference = referenceExpression.mainReference
-                        if (reference is MultiRangeReference) {
-                            AnnotationPresentationInfo(
-                                ranges = reference.ranges.map { it.shiftRight(referenceExpression.textOffset) },
-                                highlightType = ProblemHighlightType.LIKE_UNKNOWN_SYMBOL
-                            )
-                        } else {
-                            AnnotationPresentationInfo(ranges, highlightType = ProblemHighlightType.LIKE_UNKNOWN_SYMBOL)
-                        }
-                    }
-
-                    Errors.ILLEGAL_ESCAPE -> AnnotationPresentationInfo(
-                        ranges, textAttributes = KotlinHighlightingColors.INVALID_STRING_ESCAPE
-                    )
-
-                    Errors.REDECLARATION -> AnnotationPresentationInfo(
-                        ranges = listOf(diagnostic.textRanges.first()), nonDefaultMessage = ""
-                    )
-
-                    else -> {
-                        AnnotationPresentationInfo(
-                            ranges,
-                            highlightType = if (factory == Errors.INVISIBLE_REFERENCE)
-                                ProblemHighlightType.LIKE_UNKNOWN_SYMBOL
-                            else
-                                null
-                        )
-                    }
-                }
-            }
-            Severity.WARNING -> {
-                if (factory == Errors.UNUSED_PARAMETER && shouldSuppressUnusedParameter(element as KtParameter)) {
-                    return
-                }
-
-                AnnotationPresentationInfo(
-                    ranges,
-                    textAttributes = when (factory) {
-                        Errors.DEPRECATION -> CodeInsightColors.DEPRECATED_ATTRIBUTES
-                        Errors.UNUSED_ANONYMOUS_PARAMETER -> CodeInsightColors.WEAK_WARNING_ATTRIBUTES
-                        else -> null
-                    },
-                    highlightType = when (factory) {
-                        in Errors.UNUSED_ELEMENT_DIAGNOSTICS -> ProblemHighlightType.LIKE_UNUSED_SYMBOL
-                        Errors.UNUSED_ANONYMOUS_PARAMETER -> ProblemHighlightType.WEAK_WARNING
-                        else -> null
-                    }
-                )
-            }
-            Severity.INFO -> AnnotationPresentationInfo(ranges, highlightType = ProblemHighlightType.INFORMATION)
-        }
-
-        setUpAnnotations(diagnostics, presentationInfo)
-    }
-
-    private fun setUpAnnotations(diagnostics: List<Diagnostic>, data: AnnotationPresentationInfo) {
-        val fixesMap = try {
-            createQuickFixes(diagnostics)
-        } catch (e: Exception) {
-            if (e is ControlFlowException) {
-                throw e
-            }
-            LOG.error(e)
-            MultiMap<Diagnostic, IntentionAction>()
-        }
-
-        data.processDiagnostics(holder, diagnostics, fixesMap)
-    }
-
-    private fun isIrCompileClassDiagnosticForModulesWithEnabledIR(diagnostic: Diagnostic): Boolean {
-        if (diagnostic.factory != Errors.IR_COMPILED_CLASS) return false
-        val module = element.module ?: return false
-        val moduleFacetSettings = KotlinFacetSettingsProvider.getInstance(element.project)?.getSettings(module) ?: return false
-        return moduleFacetSettings.isCompilerSettingPresent(K2JVMCompilerArguments::useIR)
-                || moduleFacetSettings.isCompilerSettingPresent(K2JVMCompilerArguments::allowJvmIrDependencies)
-    }
-
-    companion object {
-        val LOG = Logger.getInstance(ElementAnnotator::class.java)
-    }
-}
 
