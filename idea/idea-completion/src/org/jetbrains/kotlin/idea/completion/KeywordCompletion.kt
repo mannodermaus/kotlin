@@ -67,6 +67,7 @@ object KeywordCompletion {
         TokenSet.create(OVERRIDE_KEYWORD /* it's needed to complete overrides that should be work by member name too */)
 
     private val INCOMPATIBLE_KEYWORDS_AROUND_SEALED = setOf(
+        SEALED_KEYWORD.value,
         ANNOTATION_KEYWORD.value,
         DATA_KEYWORD.value,
         ENUM_KEYWORD.value,
