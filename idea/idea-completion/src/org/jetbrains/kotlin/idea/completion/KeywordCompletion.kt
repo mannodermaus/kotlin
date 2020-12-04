@@ -66,6 +66,15 @@ object KeywordCompletion {
     private val KEYWORDS_TO_IGNORE_PREFIX =
         TokenSet.create(OVERRIDE_KEYWORD /* it's needed to complete overrides that should be work by member name too */)
 
+    private val INCOMPATIBLE_KEYWORDS_AROUND_SEALED = setOf(
+        ANNOTATION_KEYWORD.value,
+        DATA_KEYWORD.value,
+        ENUM_KEYWORD.value,
+        OPEN_KEYWORD.value,
+        INNER_KEYWORD.value,
+        ABSTRACT_KEYWORD.value
+    )
+
     private val COMPOUND_KEYWORDS = mapOf<KtKeywordToken, Set<KtKeywordToken>>(
         COMPANION_KEYWORD to setOf(OBJECT_KEYWORD),
         DATA_KEYWORD to setOf(CLASS_KEYWORD),
@@ -143,6 +152,12 @@ object KeywordCompletion {
             var next = position.nextLeaf { !(it.isSpace() || it.text == "$") }?.text
             if (next != null && next.startsWith("$")) {
                 next = next.substring(1)
+            }
+
+            if (keywordToken == SEALED_KEYWORD) {
+                if (next in INCOMPATIBLE_KEYWORDS_AROUND_SEALED) return
+                val prev = position.prevLeaf { !(it.isSpace() || it is PsiErrorElement) }?.text
+                if (prev in INCOMPATIBLE_KEYWORDS_AROUND_SEALED) return
             }
 
             val nextIsNotYetPresent = keywordToken.getNextPossibleKeywords(position)?.none { it.value == next } ?: false
@@ -611,4 +626,33 @@ object KeywordCompletion {
             else -> it.parent
         }
     }
+}
+
+
+fun PsiElement.printTree(withMeAsRoot: Boolean = false, indentStep: Int = 3): String {
+
+    fun PsiElement.printTreeInternal(
+        indent: Int = 0,
+        result: StringBuilder = StringBuilder(),
+        toMark: PsiElement? = this,
+        entire: Boolean = true,
+        indentStep: Int
+    ): String {
+        if (entire) return containingFile.printTreeInternal(toMark = toMark, entire = false, indentStep = indentStep)
+
+        val indentSymbols = if (indent > 0) ".".repeat(indent) else ""
+        result.append(javaClass.simpleName.prependIndent(indentSymbols))
+            .append(" [").append(text).append("]")
+            .append(if (this == toMark) " (*)" else "")
+
+        val nextIndent = indent + indentStep
+        this.allChildren.forEach {
+            result.append("\n")
+            it.printTreeInternal(nextIndent, result, toMark, entire = false, indentStep = indentStep)
+        }
+
+        return result.toString()
+    }
+
+    return printTreeInternal(entire = !withMeAsRoot, indentStep = indentStep)
 }
