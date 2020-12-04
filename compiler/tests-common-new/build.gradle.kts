@@ -63,3 +63,5 @@ projectTest(parallel = true) {
 }
 
 testsJar()
+
+val generateTests by generator("org.jetbrains.kotlin.test.generators.GenerateNewCompilerTestsKt")
