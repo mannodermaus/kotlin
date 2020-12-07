@@ -70,16 +70,6 @@ fun main(args: Array<String>) {
 
     generateTestGroupSuite(args) {
         testGroup("compiler/tests-gen", "compiler/testData") {
-            testClass<AbstractDiagnosticsTestWithFirValidation>(suiteTestClassName = "DiagnosticsTestGenerated") {
-                model("diagnostics/tests", pattern = "^(.*)\\.kts?$", excludedPattern = excludedFirTestdataPattern)
-                model("codegen/box/diagnostics")
-            }
-
-            testClass<AbstractDiagnosticsUsingJavacTest> {
-                model("diagnostics/tests", excludedPattern = excludedFirTestdataPattern)
-                model("codegen/box/diagnostics")
-            }
-
             testClass<AbstractJavacDiagnosticsTest> {
                 model("javac/diagnostics/tests", excludedPattern = excludedFirTestdataPattern)
                 model(
@@ -93,14 +83,6 @@ fun main(args: Array<String>) {
             testClass<AbstractJavacFieldResolutionTest> {
                 model("javac/fieldsResolution/tests")
                 model("javac/fieldsResolution/tests", testClassName = "TestsWithoutJavac", testMethod = "doTestWithoutJavacWrapper")
-            }
-
-            testClass<AbstractDiagnosticsTestWithStdLib> {
-                model("diagnostics/testsWithStdLib", excludedPattern = excludedFirTestdataPattern)
-            }
-
-            testClass<AbstractDiagnosticsTestWithStdLibUsingJavac> {
-                model("diagnostics/testsWithStdLib", excludedPattern = excludedFirTestdataPattern)
             }
 
             testClass<AbstractDiagnosticsTestWithJsStdLib> {
@@ -637,10 +619,6 @@ fun main(args: Array<String>) {
         }
 
         testGroup("compiler/fir/analysis-tests/tests-gen", "compiler/fir/analysis-tests/testData") {
-            testClass<AbstractFirDiagnosticsTest> {
-                model("resolve", pattern = KT_WITHOUT_DOTS_IN_NAME)
-            }
-
             testClass<AbstractFirDiagnosticsWithLightTreeTest> {
                 model("resolve", pattern = KT_WITHOUT_DOTS_IN_NAME)
             }
@@ -649,12 +627,6 @@ fun main(args: Array<String>) {
                 model("resolve", pattern = KT_WITHOUT_DOTS_IN_NAME)
             }
 
-        }
-
-        testGroup("compiler/fir/analysis-tests/tests-gen", "compiler/fir/analysis-tests/testData") {
-            testClass<AbstractFirDiagnosticsWithStdlibTest> {
-                model("resolveWithStdlib", pattern = KT_WITHOUT_DOTS_IN_NAME)
-            }
         }
 
         testGroup("compiler/fir/analysis-tests/tests-gen", "compiler/testData") {
@@ -672,19 +644,6 @@ fun main(args: Array<String>) {
         testGroup("compiler/fir/analysis-tests/tests-gen", "compiler/fir/analysis-tests/testData") {
             testClass<AbstractOwnFirTypeEnhancementTest> {
                 model("enhancement", extension = "java")
-            }
-        }
-
-        testGroup("compiler/fir/analysis-tests/tests-gen", "compiler/testData") {
-            testClass<AbstractFirOldFrontendDiagnosticsTest> {
-                model("diagnostics/tests", excludedPattern = excludedFirTestdataPattern)
-            }
-
-            testClass<AbstractFirOldFrontendDiagnosticsTestWithStdlib> {
-                model(
-                    "diagnostics/testsWithStdLib",
-                    excludedPattern = excludedFirTestdataPattern
-                )
             }
         }
 
