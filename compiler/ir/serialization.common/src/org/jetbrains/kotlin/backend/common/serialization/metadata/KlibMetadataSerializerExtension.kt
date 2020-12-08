@@ -54,6 +54,7 @@ class KlibMetadataSerializerExtension(
         childSerializer: DescriptorSerializer
     ) {
         descriptorFileId(descriptor)?.let { proto.setExtension(KlibMetadataProtoBuf.classFile, it) }
+        descriptor.findKDoc()?.let { proto.setExtension(KlibMetadataProtoBuf.classKdoc, it.render()) }
         super.serializeClass(descriptor, proto, versionRequirementTable, childSerializer)
         childSerializer.typeTable.serialize()?.let { proto.mergeTypeTable(it) }
     }
@@ -65,8 +66,6 @@ class KlibMetadataSerializerExtension(
         childSerializer: DescriptorSerializer
     ) {
         descriptorFileId(descriptor)?.let { proto.setExtension(KlibMetadataProtoBuf.propertyFile, it) }
-
-//        private fun KDocTag.render(): String = parent.text
         descriptor.findKDoc()?.let { proto.setExtension(KlibMetadataProtoBuf.propertyKdoc, it.render()) }
         super.serializeProperty(descriptor, proto, versionRequirementTable, childSerializer)
     }
@@ -78,6 +77,7 @@ class KlibMetadataSerializerExtension(
         childSerializer: DescriptorSerializer
     ) {
         descriptorFileId(descriptor)?.let { proto.setExtension(KlibMetadataProtoBuf.functionFile, it) }
+        descriptor.findKDoc()?.let { proto.setExtension(KlibMetadataProtoBuf.functionKdoc, it.render()) }
         super.serializeFunction(descriptor, proto, versionRequirementTable, childSerializer)
     }
 
