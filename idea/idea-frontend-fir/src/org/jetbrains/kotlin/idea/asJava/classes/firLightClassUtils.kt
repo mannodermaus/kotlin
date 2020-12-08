@@ -104,14 +104,10 @@ internal fun FirLightClassBase.createMethods(
 ) {
     for (declaration in declarations) {
 
-        if (declaration is KtFunctionSymbol && declaration.isInline) continue
-
-        if (declaration is KtAnnotatedSymbol && declaration.hasJvmSyntheticAnnotation(annotationUseSiteTarget = null)) continue
-
-        if (declaration is KtAnnotatedSymbol && declaration.isHiddenByDeprecation(annotationUseSiteTarget = null)) continue
-
         when (declaration) {
             is KtFunctionSymbol -> {
+                if (declaration.isInline || declaration.isHiddenOrSynthetic()) continue
+
                 var methodIndex = METHOD_INDEX_BASE
                 result.add(
                     FirLightSimpleMethodForSymbol(
@@ -147,6 +143,7 @@ internal fun FirLightClassBase.createMethods(
                 }
             }
             is KtConstructorSymbol -> {
+                if (declaration.isHiddenOrSynthetic()) continue
                 result.add(
                     FirLightConstructorForSymbol(
                         constructorSymbol = declaration,
@@ -164,8 +161,9 @@ internal fun FirLightClassBase.createMethods(
                 fun KtPropertyAccessorSymbol.needToCreateAccessor(siteTarget: AnnotationUseSiteTarget): Boolean {
                     if (isInline) return false
                     if (!hasBody && visibility == KtSymbolVisibility.PRIVATE) return false
-                    return !declaration.hasJvmSyntheticAnnotation(siteTarget)
-                            && !declaration.isHiddenByDeprecation(siteTarget)
+                    if (declaration.isHiddenOrSynthetic(siteTarget)) return false
+                    if (isHiddenOrSynthetic()) return false
+                    return true
                 }
 
                 val getter = declaration.getter?.takeIf {
@@ -214,6 +212,8 @@ internal fun FirLightClassBase.createField(
 ) {
     fun hasBackingField(property: KtPropertySymbol): Boolean {
         if (property.modality == KtCommonSymbolModality.ABSTRACT) return false
+        if (property.isHiddenOrSynthetic()) return false
+
         if (property.isLateInit) return true
         //IS PARAMETER -> true
         if (property.getter == null && property.setter == null) return true
