@@ -628,32 +628,3 @@ object KeywordCompletion {
         }
     }
 }
-
-
-fun PsiElement.printTree(withMeAsRoot: Boolean = false, indentStep: Int = 3): String {
-
-    fun PsiElement.printTreeInternal(
-        indent: Int = 0,
-        result: StringBuilder = StringBuilder(),
-        toMark: PsiElement? = this,
-        entire: Boolean = true,
-        indentStep: Int
-    ): String {
-        if (entire) return containingFile.printTreeInternal(toMark = toMark, entire = false, indentStep = indentStep)
-
-        val indentSymbols = if (indent > 0) ".".repeat(indent) else ""
-        result.append(javaClass.simpleName.prependIndent(indentSymbols))
-            .append(" [").append(text).append("]")
-            .append(if (this == toMark) " (*)" else "")
-
-        val nextIndent = indent + indentStep
-        this.allChildren.forEach {
-            result.append("\n")
-            it.printTreeInternal(nextIndent, result, toMark, entire = false, indentStep = indentStep)
-        }
-
-        return result.toString()
-    }
-
-    return printTreeInternal(entire = !withMeAsRoot, indentStep = indentStep)
-}
