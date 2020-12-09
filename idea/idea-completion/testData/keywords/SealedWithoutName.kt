@@ -1,4 +1,4 @@
-class outerClass {
+class OuterClass {
     seal<caret>
 }
 // EXIST: "sealed class"
