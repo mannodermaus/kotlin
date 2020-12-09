@@ -115,7 +115,6 @@ object KeywordCompletion {
         SET_KEYWORD
     ).map { it.value } + "companion object"
 
-
     fun complete(position: PsiElement, prefixMatcher: PrefixMatcher, isJvmModule: Boolean, consumer: (LookupElement) -> Unit) {
         if (!GENERAL_FILTER.isAcceptable(position, position)) return
 
