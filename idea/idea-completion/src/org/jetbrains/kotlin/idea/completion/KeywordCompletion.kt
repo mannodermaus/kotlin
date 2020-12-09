@@ -81,10 +81,15 @@ object KeywordCompletion {
         DATA_KEYWORD to setOf(CLASS_KEYWORD),
         ENUM_KEYWORD to setOf(CLASS_KEYWORD),
         ANNOTATION_KEYWORD to setOf(CLASS_KEYWORD),
-        SEALED_KEYWORD to setOf(CLASS_KEYWORD, INTERFACE_KEYWORD),
+        SEALED_KEYWORD to setOf(CLASS_KEYWORD, INTERFACE_KEYWORD, FUN_KEYWORD),
         LATEINIT_KEYWORD to setOf(VAR_KEYWORD),
         CONST_KEYWORD to setOf(VAL_KEYWORD),
         SUSPEND_KEYWORD to setOf(FUN_KEYWORD)
+    )
+
+    private val COMPOUND_KEYWORDS_NOT_SUGGEST_TOGETHER = mapOf<KtKeywordToken, Set<KtKeywordToken>>(
+        // 'fun' can follow 'sealed', e.g. "sealed fun interface". But "sealed fun" looks irrelevant differ to "sealed interface/class".
+        SEALED_KEYWORD to setOf(FUN_KEYWORD),
     )
 
     private val KEYWORD_CONSTRUCTS = mapOf<KtKeywordToken, String>(
@@ -134,6 +139,11 @@ object KeywordCompletion {
         }
     }
 
+    private fun KtKeywordToken.avoidSuggestingWith(keywordToken: KtKeywordToken): Boolean {
+        val nextKeywords = COMPOUND_KEYWORDS_NOT_SUGGEST_TOGETHER[this] ?: return false
+        return keywordToken in nextKeywords
+    }
+
     private fun handleCompoundKeyword(
         position: PsiElement,
         keywordToken: KtKeywordToken,
@@ -161,6 +171,8 @@ object KeywordCompletion {
             }
 
             val nextIsNotYetPresent = keywordToken.getNextPossibleKeywords(position)?.none { it.value == next } == true
+            if (nextIsNotYetPresent && keywordToken.avoidSuggestingWith(nextKeyword)) return
+
             if (nextIsNotYetPresent)
                 keyword += " " + nextKeyword.value
             else

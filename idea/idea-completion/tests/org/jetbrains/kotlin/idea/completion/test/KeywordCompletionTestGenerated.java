@@ -533,6 +533,11 @@ public class KeywordCompletionTestGenerated extends AbstractKeywordCompletionTes
         runTest("idea/idea-completion/testData/keywords/SealedForEnumClass.kt");
     }
 
+    @TestMetadata("SealedForFunInterface.kt")
+    public void testSealedForFunInterface() throws Exception {
+        runTest("idea/idea-completion/testData/keywords/SealedForFunInterface.kt");
+    }
+
     @TestMetadata("SealedForInnerClass.kt")
     public void testSealedForInnerClass() throws Exception {
         runTest("idea/idea-completion/testData/keywords/SealedForInnerClass.kt");
