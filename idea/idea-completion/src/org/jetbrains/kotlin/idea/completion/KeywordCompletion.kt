@@ -160,9 +160,7 @@ object KeywordCompletion {
             fun PsiElement.isSpace() = this is PsiWhiteSpace && '\n' !in getText()
 
             var next = position.nextLeaf { !(it.isSpace() || it.text == "$") }?.text
-            if (next != null && next.startsWith("$")) {
-                next = next.substring(1)
-            }
+            next = next?.removePrefix("$")
 
             if (keywordToken == SEALED_KEYWORD) {
                 if (next in INCOMPATIBLE_KEYWORDS_AROUND_SEALED) return
