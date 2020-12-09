@@ -11,7 +11,7 @@ dependencies {
     testCompile(project(":core:descriptors.jvm"))
     testCompile(project(":core:deserialization"))
     testCompile(project(":compiler:util"))
-    testCompile(project(":compiler:tests-mutes"))
+    testImplementation(project(":compiler:tests-mutes"))
     testCompile(project(":compiler:backend"))
     testCompile(project(":compiler:ir.tree.impl"))
     testCompile(project(":compiler:fir:tree"))
