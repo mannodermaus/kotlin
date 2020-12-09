@@ -161,7 +161,7 @@ object KeywordCompletion {
                 if (prev in INCOMPATIBLE_KEYWORDS_AROUND_SEALED) return
             }
 
-            val nextIsNotYetPresent = keywordToken.getNextPossibleKeywords(position)?.none { it.value == next } ?: false
+            val nextIsNotYetPresent = keywordToken.getNextPossibleKeywords(position)?.none { it.value == next } == true
             if (nextIsNotYetPresent)
                 keyword += " " + nextKeyword.value
             else
