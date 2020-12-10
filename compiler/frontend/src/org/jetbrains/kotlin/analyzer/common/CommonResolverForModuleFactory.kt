@@ -85,7 +85,8 @@ class CommonResolverForModuleFactory(
         moduleContext: ModuleContext,
         moduleContent: ModuleContent<M>,
         resolverForProject: ResolverForProject<M>,
-        languageVersionSettings: LanguageVersionSettings
+        languageVersionSettings: LanguageVersionSettings,
+        sealedInheritorsProvider: SealedClassInheritorsProvider
     ): ResolverForModule {
         val (moduleInfo, syntheticFiles, moduleContentScope) = moduleContent
         val project = moduleContext.project
@@ -200,7 +201,7 @@ private fun createContainerToResolveCommonCode(
     shouldCheckExpectActual: Boolean
 ): StorageComponentContainer =
     createContainer("ResolveCommonCode", analyzerServices) {
-        configureModule(moduleContext, platform, analyzerServices, bindingTrace, languageVersionSettings)
+        configureModule(moduleContext, platform, analyzerServices, bindingTrace, languageVersionSettings,)
 
         useInstance(moduleContentScope)
         useInstance(declarationProviderFactory)
