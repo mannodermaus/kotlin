@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.idea.asJava.classes.createMethods
 import org.jetbrains.kotlin.idea.frontend.api.analyze
 import org.jetbrains.kotlin.idea.frontend.api.symbols.KtCallableSymbol
 import org.jetbrains.kotlin.idea.frontend.api.symbols.KtPropertySymbol
+import org.jetbrains.kotlin.idea.frontend.api.symbols.markers.KtSymbolVisibility
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.load.java.structure.LightClassOriginKind
 import org.jetbrains.kotlin.name.FqName
@@ -116,7 +117,19 @@ class FirLightClassForFacade(
         }
 
         for (propertySymbol in propertySymbols) {
-            val forceStaticAndPropertyVisibility = propertySymbol.isConst || propertySymbol.hasJvmFieldAnnotation()
+
+            val isLateInitWithPublicAccessors = if (propertySymbol.isLateInit) {
+                val getterIsPublic = propertySymbol.getter?.toPsiVisibilityForMember(isTopLevel = true)
+                    ?.let { it == PsiModifier.PUBLIC } ?: true
+                val setterIsPublic = propertySymbol.setter?.toPsiVisibilityForMember(isTopLevel = true)
+                    ?.let { it == PsiModifier.PUBLIC } ?: true
+                getterIsPublic && setterIsPublic
+            } else false
+
+            val forceStaticAndPropertyVisibility = isLateInitWithPublicAccessors ||
+                    propertySymbol.isConst ||
+                    propertySymbol.hasJvmFieldAnnotation()
+
             createField(
                 propertySymbol,
                 nameGenerator,
