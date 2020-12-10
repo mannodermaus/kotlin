@@ -62,7 +62,7 @@ externalStdlibTestsDir.mkdirs()
 ext.platformManager = project.project(":kotlin-native").platformManager
 ext.target = platformManager.targetManager(project.testTarget).target
 
-ext.testLibraryDir = "${ext.kotlinNativeDist}/klib/platform/${project.target.name}"
+ext.testLibraryDir = "${ext.testOutputRoot}/klib/platform/${project.target.name}"
 
 // Add executor to run tests depending on a target
 project.convention.plugins.executor = ExecutorServiceKt.create(project)
@@ -153,7 +153,7 @@ konanArtifacts {
 task installTestLibrary(type: KlibInstall) {
     dependsOn compileKonanTestLibraryHost
     klib = konanArtifacts.testLibrary.getArtifactByTarget('host')
-    repo = rootProject.project(":kotlin-native").file(testLibraryDir)
+    repo = rootProject.file(testLibraryDir)
 
     doLast {
         // Remove the version in build/, so that we don't link two copies.
@@ -172,7 +172,7 @@ void konanc(String[] args) {
 
 clean {
     doLast {
-        delete(project(":kotlin-native").file(testOutputRoot))
+        delete(rootProject.file(testOutputRoot))
     }
 }
 
@@ -2094,7 +2094,7 @@ standaloneTest("link_testLib_explicitly") {
     goldValue = "This is a side effect of a test library linked into the binary.\nYou should not be seeing this.\n\nHello\n"
     source = "link/omit/hello.kt"
     // We force library inclusion, so need to see the warning banner.
-    flags = ['-l', 'testLibrary']
+    flags = ['-l', 'testLibrary', '-r', testLibraryDir]
     doLast {
         def file = new File("$testLibraryDir/testLibrary")
         file.deleteDir()
