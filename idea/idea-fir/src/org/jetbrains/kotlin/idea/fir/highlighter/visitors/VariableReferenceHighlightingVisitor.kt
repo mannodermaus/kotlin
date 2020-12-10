@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.idea.fir.highlighter.visitors
 
-import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiModifier
@@ -15,6 +14,7 @@ import com.intellij.psi.util.parentOfType
 import org.jetbrains.kotlin.idea.KotlinIdeaAnalysisBundle
 import org.jetbrains.kotlin.idea.fir.highlighter.textAttributesKeyForPropertyDeclaration
 import org.jetbrains.kotlin.idea.frontend.api.KtAnalysisSession
+import org.jetbrains.kotlin.idea.highlighter.HighlightInfoWrapper
 import org.jetbrains.kotlin.idea.highlighter.NameHighlighter
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -23,8 +23,8 @@ import org.jetbrains.kotlin.idea.highlighter.KotlinHighlightingColors as Colors
 
 internal class VariableReferenceHighlightingVisitor(
     analysisSession: KtAnalysisSession,
-    holder: AnnotationHolder
-) : FirAfterResolveHighlightingVisitor(analysisSession, holder) {
+    highlightInfoWrapper: HighlightInfoWrapper
+) : FirAfterResolveHighlightingVisitor(analysisSession, highlightInfoWrapper) {
     override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
         if (!NameHighlighter.namesHighlightingEnabled) return
         if (expression.isAssignmentReference()) return

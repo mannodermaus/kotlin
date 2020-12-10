@@ -5,13 +5,13 @@
 
 package org.jetbrains.kotlin.idea.fir.highlighter.visitors
 
-import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.idea.fir.highlighter.isAnnotationClass
 import org.jetbrains.kotlin.idea.fir.highlighter.textAttributesKeyForTypeDeclaration
 import org.jetbrains.kotlin.idea.frontend.api.KtAnalysisSession
+import org.jetbrains.kotlin.idea.highlighter.HighlightInfoWrapper
 import org.jetbrains.kotlin.idea.highlighter.NameHighlighter
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.psi.*
@@ -19,8 +19,8 @@ import org.jetbrains.kotlin.idea.highlighter.KotlinHighlightingColors as Colors
 
 internal class TypeHighlightingVisitor(
     analysisSession: KtAnalysisSession,
-    holder: AnnotationHolder
-) : FirAfterResolveHighlightingVisitor(analysisSession, holder) {
+    highlightInfoWrapper: HighlightInfoWrapper
+) : FirAfterResolveHighlightingVisitor(analysisSession, highlightInfoWrapper) {
     override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
         if (!NameHighlighter.namesHighlightingEnabled) return
         if (expression.isCalleeExpression()) return

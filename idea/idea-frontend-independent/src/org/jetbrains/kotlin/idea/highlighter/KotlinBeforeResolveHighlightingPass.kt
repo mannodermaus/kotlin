@@ -6,54 +6,26 @@
 package org.jetbrains.kotlin.idea.highlighter
 
 import com.intellij.codeHighlighting.*
-import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
-import com.intellij.codeInsight.daemon.impl.HighlightInfo
-import com.intellij.codeInsight.daemon.impl.UpdateHighlightersUtil
-import com.intellij.lang.annotation.AnnotationHolder
-import com.intellij.lang.annotation.AnnotationSession
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiRecursiveElementVisitor
 import org.jetbrains.kotlin.psi.KtFile
 
-@Suppress("UnstableApiUsage")
-class KotlinBeforeResolveHighlightingPass(
-    private val file: KtFile,
-    document: Document
-) : TextEditorHighlightingPass(file.project, document), DumbAware {
+class KotlinBeforeResolveHighlightingPass(file: KtFile, document: Document) : AbstractHighlightingPassBase(file, document) {
 
-    @Volatile
-    private var annotationHolder: AnnotationHolderImpl? = null
+    override val highlighter: Highlighter
+        get() = BeforeResolveHighlightingHighlighter(highlightInfoWrapper)
 
-    override fun doCollectInformation(progress: ProgressIndicator) {
-        val annotationHolder = AnnotationHolderImpl(AnnotationSession(file))
-        val visitor = BeforeResolveHighlightingVisitor(annotationHolder)
-        val extensions = EP_NAME.extensionList.map { it.createVisitor(annotationHolder) }
-        annotationHolder.runAnnotatorWithContext(file) { element, _ ->
-            element.accept(object : PsiRecursiveElementVisitor() {
-                override fun visitElement(element: PsiElement) {
-                    super.visitElement(element)
-                    element.accept(visitor)
-                    extensions.forEach(element::accept)
-                }
-            })
-        }
-        this.annotationHolder = annotationHolder
-    }
+    private class BeforeResolveHighlightingHighlighter(private val highlightInfoWrapper: HighlightInfoWrapper) : Highlighter {
+        private val visitor = BeforeResolveHighlightingVisitor(highlightInfoWrapper)
+        private val extensions = EP_NAME.extensionList.map { it.createVisitor(highlightInfoWrapper) }
 
-    override fun doApplyInformationToEditor() {
-        try {
-            val infos = annotationHolder?.map { HighlightInfo.fromAnnotation(it) } ?: return
-
-            UpdateHighlightersUtil.setHighlightersToEditor(myProject, myDocument, 0, file.textLength, infos, colorsScheme, id)
-        } finally {
-            annotationHolder = null
+        override fun highlight(element: PsiElement, highlightInfoWrapper: HighlightInfoWrapper) {
+            element.accept(visitor)
+            extensions.forEach(element::accept)
         }
     }
 
@@ -82,5 +54,5 @@ class KotlinBeforeResolveHighlightingPass(
 }
 
 interface BeforeResolveHighlightingExtension {
-    fun createVisitor(holder: AnnotationHolder): HighlightingVisitor
+    fun createVisitor(highlightInfoWrapper: HighlightInfoWrapper): HighlightingVisitor
 }

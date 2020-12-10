@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.idea.highlighter
 
-import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.builtins.isFunctionTypeOrSubtype
@@ -25,8 +24,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.serialization.deserialization.KOTLIN_SUSPEND_BUILT_IN_FUNCTION_FQ_NAME
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 
-internal class FunctionsHighlightingVisitor(holder: AnnotationHolder, bindingContext: BindingContext) :
-    AfterAnalysisHighlightingVisitor(holder, bindingContext) {
+internal class FunctionsHighlightingVisitor(highlightInfoWrapper: HighlightInfoWrapper, bindingContext: BindingContext) :
+    AfterAnalysisHighlightingVisitor(highlightInfoWrapper, bindingContext) {
 
     override fun visitBinaryExpression(expression: KtBinaryExpression) {
         if (expression.operationReference.getIdentifier() != null) {

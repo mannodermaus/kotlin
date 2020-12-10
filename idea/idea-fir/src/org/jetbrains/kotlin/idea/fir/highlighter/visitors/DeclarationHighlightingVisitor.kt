@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.idea.fir.highlighter.visitors
 
-import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.psi.util.PsiUtilCore
 import org.jetbrains.kotlin.idea.fir.highlighter.textAttributesForClass
 import org.jetbrains.kotlin.idea.fir.highlighter.textAttributesForKtParameterDeclaration
@@ -15,7 +14,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.idea.highlighter.KotlinHighlightingColors as Colors
 
-internal class DeclarationHighlightingVisitor(holder: AnnotationHolder) : HighlightingVisitor(holder) {
+internal class DeclarationHighlightingVisitor(highlightInfoWrapper: HighlightInfoWrapper) : HighlightingVisitor(highlightInfoWrapper) {
     override fun visitTypeAlias(typeAlias: KtTypeAlias) {
         highlightNamedDeclaration(typeAlias, Colors.TYPE_ALIAS)
         super.visitTypeAlias(typeAlias)
@@ -56,6 +55,6 @@ internal class DeclarationHighlightingVisitor(holder: AnnotationHolder) : Highli
 }
 
 class DeclarationHighlightingExtension : BeforeResolveHighlightingExtension {
-    override fun createVisitor(holder: AnnotationHolder): HighlightingVisitor =
-        DeclarationHighlightingVisitor(holder)
+    override fun createVisitor(highlightInfoWrapper: HighlightInfoWrapper): HighlightingVisitor =
+        DeclarationHighlightingVisitor(highlightInfoWrapper)
 }

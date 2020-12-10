@@ -6,9 +6,8 @@
 package org.jetbrains.kotlin.idea.highlighter
 
 import com.intellij.codeHighlighting.*
-import com.intellij.lang.annotation.AnnotationHolder
-import com.intellij.lang.annotation.Annotator
-import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.codeInsight.daemon.impl.HighlightInfo
+import com.intellij.codeInsight.daemon.impl.HighlightInfoType
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.TextAttributesKey
@@ -24,24 +23,25 @@ import org.jetbrains.kotlin.psi.KtCodeFragment
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 
-class DebugInfoHighlightingPass(file: KtFile, document: Document) : AbstractKotlinHighlightingPass(file, document) {
-    override val annotator: Annotator
-        get() = DebugInfoAnnotator()
+class DebugInfoHighlightingPass(file: KtFile, document: Document) : AbstractBindingContextAwareHighlightingPassBase(file, document) {
+    override val highlighter: Highlighter
+        get() = DebugInfoHighlighter()
 
-    private inner class DebugInfoAnnotator : Annotator {
-        override fun annotate(element: PsiElement, holder: AnnotationHolder) {
+    private inner class DebugInfoHighlighter : Highlighter {
+        override fun highlight(element: PsiElement, highlightInfoWrapper: HighlightInfoWrapper) {
             if (element is KtFile && element !is KtCodeFragment) {
                 fun errorAnnotation(
                     expression: PsiElement,
                     message: String,
                     textAttributes: TextAttributesKey? = KotlinHighlightingColors.DEBUG_INFO
-                ) =
-                    holder.newAnnotation(HighlightSeverity.ERROR, "[DEBUG] $message")
+                ) {
+                    HighlightInfo.newHighlightInfo(HighlightInfoType.ERROR)
+                        .description(message)
                         .range(expression.textRange)
-                        .also {
-                            textAttributes?.let { ta -> it.textAttributes(ta) }
-                        }
-                        .create()
+                        .also { builder -> textAttributes?.let { builder.textAttributes(it) } }
+                        .createUnconditionally()
+                        .also(highlightInfoWrapper::add)
+                }
 
                 try {
                     DebugInfoUtil.markDebugAnnotations(element, bindingContext(), object : DebugInfoUtil.DebugInfoReporter() {

@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.idea.highlighter
 
-import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.util.PsiTreeUtil
@@ -17,8 +16,8 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.util.FakeCallableDescriptorForObject
 
-internal class TypeKindHighlightingVisitor(holder: AnnotationHolder, bindingContext: BindingContext) :
-    AfterAnalysisHighlightingVisitor(holder, bindingContext) {
+internal class TypeKindHighlightingVisitor(highlightInfoWrapper: HighlightInfoWrapper, bindingContext: BindingContext) :
+    AfterAnalysisHighlightingVisitor(highlightInfoWrapper, bindingContext) {
 
     override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
         val parent = expression.parent

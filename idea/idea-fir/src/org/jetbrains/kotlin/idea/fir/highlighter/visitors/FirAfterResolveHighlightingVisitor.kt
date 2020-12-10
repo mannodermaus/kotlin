@@ -5,24 +5,24 @@
 
 package org.jetbrains.kotlin.idea.fir.highlighter.visitors
 
-import com.intellij.lang.annotation.AnnotationHolder
 import org.jetbrains.kotlin.idea.frontend.api.KtAnalysisSession
+import org.jetbrains.kotlin.idea.highlighter.HighlightInfoWrapper
 import org.jetbrains.kotlin.idea.highlighter.HighlightingVisitor
 
 abstract class FirAfterResolveHighlightingVisitor(
     protected val analysisSession: KtAnalysisSession,
-    protected val holder: AnnotationHolder
-) : HighlightingVisitor(holder) {
+    protected val highlightInfoWrapper: HighlightInfoWrapper
+) : HighlightingVisitor(highlightInfoWrapper) {
 
     companion object {
         fun createListOfVisitors(
             analysisSession: KtAnalysisSession,
-            holder: AnnotationHolder
+            highlightInfoWrapper: HighlightInfoWrapper
         ): List<FirAfterResolveHighlightingVisitor> = listOf(
-            TypeHighlightingVisitor(analysisSession, holder),
-            FunctionCallHighlightingVisitor(analysisSession, holder),
-            ExpressionsSmartcastHighlightingVisitor(analysisSession, holder),
-            VariableReferenceHighlightingVisitor(analysisSession, holder),
+            TypeHighlightingVisitor(analysisSession, highlightInfoWrapper),
+            FunctionCallHighlightingVisitor(analysisSession, highlightInfoWrapper),
+            ExpressionsSmartcastHighlightingVisitor(analysisSession, highlightInfoWrapper),
+            VariableReferenceHighlightingVisitor(analysisSession, highlightInfoWrapper),
         )
     }
 }
