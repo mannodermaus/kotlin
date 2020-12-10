@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.resolve.checkers.ExpectedActualDeclarationChecker
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedPropertyDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedSimpleFunctionDescriptor
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 
 internal val DeclarationDescriptor.isExpectMember: Boolean
     get() = this is MemberDescriptor && this.isExpect
@@ -50,4 +51,11 @@ fun CallableMemberDescriptor.findSourceFile(): SourceFile {
                 this, proto.getExtension(KlibMetadataProtoBuf.propertyFile))
         else -> TODO()
     }
+}
+
+fun DeclarationDescriptor.extractKdoc(): String? = when (this) {
+    is DeserializedClassDescriptor -> classProto.getExtension(KlibMetadataProtoBuf.classKdoc)
+    is DeserializedSimpleFunctionDescriptor -> proto.getExtension(KlibMetadataProtoBuf.functionKdoc)
+    is DeserializedPropertyDescriptor -> proto.getExtension(KlibMetadataProtoBuf.propertyKdoc)
+    else -> null
 }
