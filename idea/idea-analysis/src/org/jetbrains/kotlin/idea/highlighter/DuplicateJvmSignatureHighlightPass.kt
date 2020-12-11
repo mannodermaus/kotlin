@@ -6,6 +6,8 @@
 package org.jetbrains.kotlin.idea.highlighter
 
 import com.intellij.codeHighlighting.*
+import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.lang.annotation.Annotator
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
@@ -13,7 +15,8 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.asJava.getJvmSignatureDiagnostics
 import org.jetbrains.kotlin.idea.caches.project.getModuleInfo
-import org.jetbrains.kotlin.idea.highlighter.AbstractKotlinHighlightingPass.Companion.highlightDiagnostic
+import org.jetbrains.kotlin.idea.caches.resolve.analyzeWithContent
+import org.jetbrains.kotlin.idea.highlighter.AbstractKotlinHighlightingPass.Companion.annotateDiagnostic
 import org.jetbrains.kotlin.idea.project.TargetPlatformDetector
 import org.jetbrains.kotlin.idea.util.ProjectRootsUtil
 import org.jetbrains.kotlin.platform.jvm.isJvm
@@ -22,20 +25,25 @@ import org.jetbrains.kotlin.psi.KtFile
 
 class DuplicateJvmSignatureHighlightPass(file: KtFile, document: Document) :
     AbstractBindingContextAwareHighlightingPassBase(file, document) {
-    override val highlighter: Highlighter
-        get() = DuplicateJvmSignatureHighlighter()
+    override val annotator: Annotator
+        get() = DuplicateJvmSignatureAnnotator()
 
-    inner class DuplicateJvmSignatureHighlighter : Highlighter {
-        override fun highlight(element: PsiElement, highlightInfoWrapper: HighlightInfoWrapper) {
+    inner class DuplicateJvmSignatureAnnotator : Annotator {
+        override fun annotate(element: PsiElement, holder: AnnotationHolder) {
             if (element !is KtFile && element !is KtDeclaration) return
-            if (!ProjectRootsUtil.isInProjectSource(element)) return
 
-            val otherDiagnostics = bindingContext().diagnostics
+            val otherDiagnostics = when (element) {
+                is KtDeclaration -> element.analyzeWithContent()
+                is KtFile -> element.analyzeWithContent()
+                else -> throw AssertionError("DuplicateJvmSignatureAnnotator: should not get here! Element: ${element.text}")
+            }.diagnostics
 
             val moduleScope = element.getModuleInfo().contentScope()
             val diagnostics = getJvmSignatureDiagnostics(element, otherDiagnostics, moduleScope) ?: return
 
-            diagnostics.forEach { highlightDiagnostic(file, highlightInfoWrapper, it) }
+            val diagnosticsForElement = diagnostics.forElement(element).toSet()
+
+            diagnosticsForElement.forEach { annotateDiagnostic(file, holder, it) }
         }
     }
 

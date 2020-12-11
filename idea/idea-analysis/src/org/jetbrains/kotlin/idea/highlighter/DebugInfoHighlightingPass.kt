@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.psi.KtCodeFragment
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 
-class DebugInfoHighlightingPass(file: KtFile, document: Document) : AbstractKotlinHighlightingPass(file, document) {
+class DebugInfoHighlightingPass(file: KtFile, document: Document) : AbstractBindingContextAwareHighlightingPassBase(file, document) {
     override val annotator: Annotator
         get() = DebugInfoAnnotator()
 

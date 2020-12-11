@@ -42,6 +42,8 @@ internal class ElementAnnotator(
         // hack till the root cause #KT-21246 is fixed
         if (isIrCompileClassDiagnosticForModulesWithEnabledIR(diagnostic)) return
 
+        if (!diagnostic.isValid) return
+
         val presentationInfo = presentationInfo(diagnostic) ?: return
         setUpAnnotations(holder, listOf(diagnostic), presentationInfo, annotationBuilderByDiagnostic, noFixes)
     }
@@ -52,6 +54,8 @@ internal class ElementAnnotator(
     ) {
         // hack till the root cause #KT-21246 is fixed
         if (isIrCompileClassDiagnosticForModulesWithEnabledIR(diagnostic)) return
+
+        if (!diagnostic.isValid) return
 
         val presentationInfo = presentationInfo(diagnostic) ?: return
         val annotationBuilder = annotationBuilderByDiagnostic[diagnostic] ?: return
