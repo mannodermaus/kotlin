@@ -5,12 +5,12 @@
 
 package org.jetbrains.kotlin.idea.fir.highlighter.visitors
 
+import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import org.jetbrains.kotlin.idea.frontend.api.*
 import org.jetbrains.kotlin.idea.frontend.api.calls.*
 import org.jetbrains.kotlin.idea.frontend.api.symbols.*
 import org.jetbrains.kotlin.idea.frontend.api.symbols.markers.KtSymbolKind
-import org.jetbrains.kotlin.idea.highlighter.HighlightInfoWrapper
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.serialization.deserialization.KOTLIN_SUSPEND_BUILT_IN_FUNCTION_FQ_NAME
@@ -18,8 +18,8 @@ import org.jetbrains.kotlin.idea.highlighter.KotlinHighlightingColors as Colors
 
 internal class FunctionCallHighlightingVisitor(
     analysisSession: KtAnalysisSession,
-    highlightInfoWrapper: HighlightInfoWrapper
-) : FirAfterResolveHighlightingVisitor(analysisSession, highlightInfoWrapper) {
+    holder: AnnotationHolder
+) : FirAfterResolveHighlightingVisitor(analysisSession, holder) {
     override fun visitBinaryExpression(expression: KtBinaryExpression) = with(analysisSession) {
         val operationReference = expression.operationReference as? KtReferenceExpression ?: return
         if (operationReference.isAssignment()) return

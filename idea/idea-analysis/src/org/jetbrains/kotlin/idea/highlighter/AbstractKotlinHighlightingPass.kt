@@ -5,143 +5,91 @@
 
 package org.jetbrains.kotlin.idea.highlighter
 
+import com.intellij.codeHighlighting.TextEditorHighlightingPass
+import com.intellij.codeInsight.daemon.impl.AnnotationHolderImpl
 import com.intellij.codeInsight.daemon.impl.HighlightInfo
-import com.intellij.codeInsight.intention.IntentionAction
+import com.intellij.codeInsight.daemon.impl.UpdateHighlightersUtil
+import com.intellij.lang.annotation.AnnotationHolder
+import com.intellij.lang.annotation.AnnotationSession
+import com.intellij.lang.annotation.Annotator
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.util.Key
+import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.diagnostics.Diagnostic
-import org.jetbrains.kotlin.diagnostics.Errors
+import com.intellij.psi.PsiRecursiveElementVisitor
 import org.jetbrains.kotlin.idea.caches.resolve.analyzeWithAllCompilerChecks
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtNameReferenceExpression
-import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.BindingContext
 
-abstract class AbstractKotlinHighlightingPass(file: KtFile, document: Document) :
-    AbstractBindingContextAwareHighlightingPassBase(file, document) {
-    private var infosByDiagnostic = mutableMapOf<Diagnostic, HighlightInfo>()
+@Suppress("UnstableApiUsage")
+abstract class AbstractKotlinHighlightingPass(
+    protected val file: KtFile,
+    document: Document,
+    private val enableAnalyze: Boolean = true
+) : TextEditorHighlightingPass(file.project, document), DumbAware {
 
-    override val highlighter: Highlighter
-        get() = KotlinAfterAnalysisHighlighter()
+    @Volatile
+    private var annotationHolder: AnnotationHolderImpl? = null
+    private val highlightInfos: MutableList<HighlightInfo> = mutableListOf()
+    private val cachedAnnotator by lazy { annotator }
 
-    private inner class KotlinAfterAnalysisHighlighter : Highlighter {
-        override fun highlight(element: PsiElement, highlightInfoWrapper: HighlightInfoWrapper) {
-            getAfterAnalysisVisitor(highlightInfoWrapper, bindingContext()).forEach { visitor -> element.accept(visitor) }
+    protected var bindingContext: BindingContext? = null
+    protected abstract val annotator: Annotator
+
+    protected fun bindingContext(): BindingContext {
+        return if (enableAnalyze) {
+            bindingContext ?: error("bindingContext has to be acquired")
+        } else {
+            error("bindingContext is not enabled for ${this::javaClass.name}")
         }
     }
 
     override fun doCollectInformation(progress: ProgressIndicator) {
+        highlightInfos.clear()
+        bindingContext = if (enableAnalyze) {
+            val analysisResult = file.analyzeWithAllCompilerChecks()
+            if (analysisResult.isError()) {
+                throw ProcessCanceledException(analysisResult.error)
+            }
+
+            analysisResult.bindingContext
+        } else {
+            null
+        }
+
+        val annotationHolder = AnnotationHolderImpl(AnnotationSession(file))
         try {
-            super.doCollectInformation(progress)
+            annotationHolder.runAnnotatorWithContext(file) { element, holder ->
+                runAnnotatorWithContext(element, holder)
+            }
+            this.annotationHolder = annotationHolder
         } finally {
-            infosByDiagnostic.clear()
+            bindingContext = null
         }
     }
 
-    override fun buildBindingContext(highlightInfoWrapper: HighlightInfoWrapper): BindingContext {
-        // annotate diagnostics on fly: show diagnostics as soon as front-end reports them
-        // don't create quick fixes as it could require some resolve
-        val analysisResult =
-            file.analyzeWithAllCompilerChecks({ highlightDiagnostic(highlightInfoWrapper, it, infosByDiagnostic, true) })
-        if (analysisResult.isError()) {
-            throw ProcessCanceledException(analysisResult.error)
-        }
-
-        // resolve is done!
-
-        return analysisResult.bindingContext
-    }
-
-    override fun runAnnotatorWithContext(element: PsiElement, highlightInfoWrapper: HighlightInfoWrapper) {
-        val diagnostics = bindingContext().diagnostics
-
-        if (!diagnostics.isEmpty()) {
-            // this could happen when resolve has not been run (a cached result is used)
-            if (infosByDiagnostic.isEmpty()) {
-                diagnostics.forEach {
-                    highlightDiagnostic(highlightInfoWrapper, it, infosByDiagnostic)
-                }
-            } else {
-                // annotate diagnostics with quickfixes when analysis is ready
-                diagnostics.forEach {
-                    highlightQuickFixes(it, infosByDiagnostic)
-                }
-            }
-        }
-        super.runAnnotatorWithContext(element, highlightInfoWrapper)
-    }
-
-    private fun highlightDiagnostic(
-        highlightInfoWrapper: HighlightInfoWrapper,
-        diagnostic: Diagnostic,
-        infosByDiagnostic: MutableMap<Diagnostic, HighlightInfo>,
-        noFixes: Boolean = false
-    ) = highlightDiagnostic(file, highlightInfoWrapper, diagnostic, infosByDiagnostic, ::shouldSuppressUnusedParameter, noFixes)
-
-    private fun highlightQuickFixes(
-        diagnostic: Diagnostic,
-        infosByDiagnostic: Map<Diagnostic, HighlightInfo>
+    protected open fun runAnnotatorWithContext(
+        element: PsiElement,
+        holder: AnnotationHolder
     ) {
-        val element = diagnostic.psiElement
-
-        val shouldHighlightErrors =
-            KotlinHighlightingUtil.shouldHighlightErrors(
-                if (element.isPhysical) file else element
-            )
-
-        if (shouldHighlightErrors) {
-            ElementHighlighter(element) { param ->
-                shouldSuppressUnusedParameter(param)
-            }.registerDiagnosticsQuickFixes(diagnostic, infosByDiagnostic)
-        }
+        element.accept(object : PsiRecursiveElementVisitor() {
+            override fun visitElement(element: PsiElement) {
+                cachedAnnotator.annotate(element, holder)
+                super.visitElement(element)
+            }
+        })
     }
 
-    protected open fun shouldSuppressUnusedParameter(parameter: KtParameter): Boolean = false
+    override fun getInfos(): MutableList<HighlightInfo> = highlightInfos
 
-    companion object {
-        fun createQuickFixes(diagnostic: Diagnostic): Collection<IntentionAction> =
-            createQuickFixes(listOfNotNull(diagnostic))[diagnostic]
-
-        private val UNRESOLVED_KEY = Key<Unit>("KotlinHighlightingPass.UNRESOLVED_KEY")
-
-        fun wasUnresolved(element: KtNameReferenceExpression) = element.getUserData(UNRESOLVED_KEY) != null
-
-        fun getAfterAnalysisVisitor(highlightInfoWrapper: HighlightInfoWrapper, bindingContext: BindingContext) =
-            arrayOf(
-                PropertiesHighlightingVisitor(highlightInfoWrapper, bindingContext),
-                FunctionsHighlightingVisitor(highlightInfoWrapper, bindingContext),
-                VariablesHighlightingVisitor(highlightInfoWrapper, bindingContext),
-                TypeKindHighlightingVisitor(highlightInfoWrapper, bindingContext)
-            )
-
-        internal fun highlightDiagnostic(
-            file: KtFile,
-            highlightInfoWrapper: HighlightInfoWrapper,
-            diagnostic: Diagnostic,
-            infosByDiagnostic: MutableMap<Diagnostic, HighlightInfo>? = null,
-            shouldSuppressUnusedParameter: (KtParameter) -> Boolean = { false },
-            noFixes: Boolean = false
-        ) {
-            val element = diagnostic.psiElement
-            if (element is KtNameReferenceExpression) {
-                val unresolved = diagnostic.factory == Errors.UNRESOLVED_REFERENCE
-                element.putUserData(UNRESOLVED_KEY, if (unresolved) Unit else null)
-            }
-
-            val shouldHighlightErrors =
-                KotlinHighlightingUtil.shouldHighlightErrors(
-                    if (element.isPhysical) file else element
-                )
-
-            if (shouldHighlightErrors) {
-                val elementAnnotator = ElementHighlighter(element) { param ->
-                    shouldSuppressUnusedParameter(param)
-                }
-                elementAnnotator.registerDiagnosticsHighlightInfos(highlightInfoWrapper, diagnostic, infosByDiagnostic, noFixes)
-            }
+    override fun doApplyInformationToEditor() {
+        try {
+            val infos = annotationHolder?.map { HighlightInfo.fromAnnotation(it) } ?: return
+            highlightInfos.addAll(infos)
+            UpdateHighlightersUtil.setHighlightersToEditor(myProject, myDocument, 0, file.textLength, infos, colorsScheme, id)
+        } finally {
+            annotationHolder = null
         }
     }
 

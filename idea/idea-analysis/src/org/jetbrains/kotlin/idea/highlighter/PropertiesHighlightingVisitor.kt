@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.idea.highlighter
 
+import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.psi.PsiElement
@@ -22,8 +23,8 @@ import org.jetbrains.kotlin.resolve.calls.tasks.isDynamic
 import org.jetbrains.kotlin.resolve.calls.tower.isSynthesized
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 
-internal class PropertiesHighlightingVisitor(highlightInfoWrapper: HighlightInfoWrapper, bindingContext: BindingContext) :
-    AfterAnalysisHighlightingVisitor(highlightInfoWrapper, bindingContext) {
+internal class PropertiesHighlightingVisitor(holder: AnnotationHolder, bindingContext: BindingContext) :
+    AfterAnalysisHighlightingVisitor(holder, bindingContext) {
 
     override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
         if (expression.parent is KtThisExpression) {

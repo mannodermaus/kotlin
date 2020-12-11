@@ -5,18 +5,18 @@
 
 package org.jetbrains.kotlin.idea.fir.highlighter.visitors
 
+import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.idea.KotlinIdeaAnalysisBundle
 import org.jetbrains.kotlin.idea.frontend.api.KtAnalysisSession
 import org.jetbrains.kotlin.idea.frontend.api.ImplicitReceiverSmartcastKind
-import org.jetbrains.kotlin.idea.highlighter.HighlightInfoWrapper
 import org.jetbrains.kotlin.idea.highlighter.KotlinHighlightingColors
 import org.jetbrains.kotlin.psi.*
 
 internal class ExpressionsSmartcastHighlightingVisitor(
     analysisSession: KtAnalysisSession,
-    highlightInfoWrapper: HighlightInfoWrapper
-) : FirAfterResolveHighlightingVisitor(analysisSession, highlightInfoWrapper) {
+    holder: AnnotationHolder
+) : FirAfterResolveHighlightingVisitor(analysisSession, holder) {
     override fun visitExpression(expression: KtExpression) = with(analysisSession) {
         expression.getImplicitReceiverSmartCasts().forEach { (types, kind) ->
             val receiverName = when (kind) {

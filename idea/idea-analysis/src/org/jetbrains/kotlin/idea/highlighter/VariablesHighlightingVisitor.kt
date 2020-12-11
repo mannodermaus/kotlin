@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.idea.highlighter
 
+import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNameIdentifierOwner
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -26,8 +27,8 @@ import org.jetbrains.kotlin.resolve.scopes.receivers.ExtensionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.types.expressions.CaptureKind
 
-internal class VariablesHighlightingVisitor(highlightInfoWrapper: HighlightInfoWrapper, bindingContext: BindingContext) :
-    AfterAnalysisHighlightingVisitor(highlightInfoWrapper, bindingContext) {
+internal class VariablesHighlightingVisitor(holder: AnnotationHolder, bindingContext: BindingContext) :
+    AfterAnalysisHighlightingVisitor(holder, bindingContext) {
 
     override fun visitSimpleNameExpression(expression: KtSimpleNameExpression) {
         val target = bindingContext.get(REFERENCE_TARGET, expression) ?: return

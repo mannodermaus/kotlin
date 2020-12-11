@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.idea.highlighter
 
 import com.intellij.codeHighlighting.RainbowHighlighter
+import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.util.TextRange
@@ -19,8 +20,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 
-internal class BeforeResolveHighlightingVisitor(highlightInfoWrapper: HighlightInfoWrapper) :
-    HighlightingVisitor(highlightInfoWrapper) {
+internal class BeforeResolveHighlightingVisitor(holder: AnnotationHolder) : HighlightingVisitor(holder) {
 
     override fun visitElement(element: PsiElement) {
         val elementType = element.node.elementType
