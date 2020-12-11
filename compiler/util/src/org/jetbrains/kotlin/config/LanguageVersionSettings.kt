@@ -141,9 +141,21 @@ enum class LanguageFeature(
     ForbidAnonymousReturnTypesInPrivateInlineFunctions(KOTLIN_1_5, kind = BUG_FIX),
     ForbidReferencingToUnderscoreNamedParameterOfCatchBlock(KOTLIN_1_5, kind = BUG_FIX),
     UseCorrectExecutionOrderForVarargArguments(KOTLIN_1_5, kind = BUG_FIX),
+    ReadTypeUseAnnotationsFromClassFiles(KOTLIN_1_5),
 
-    ImprovementsAroundTypeEnhancement(sinceVersion = KOTLIN_1_6, defaultState = State.ENABLED_WITH_WARNING, kind = UNSTABLE_FEATURE),
-    ReadTypeUseAnnotationsFromClassFiles(sinceVersion = KOTLIN_1_6, defaultState = State.ENABLED_WITH_WARNING, kind = UNSTABLE_FEATURE),
+    /*
+     * Improvements include the following:
+     *  - taking into account for type enhancement freshly supported type use annotations: KT-11454
+     *  - use annotations in the type parameter position to enhance corresponding types: KT-11454
+     *  - proper support of the type enhancement of the annotated java arrays: KT-24392
+     *  - proper support of the type enhancement of the annotated java varargs' elements: KT-18768
+     *  - type enhancement based on annotated bounds of type parameters
+     *  - type enhancement within type arguments of the base classes and interfaces
+     *  - support type enhancement based on type use annotations on java fields
+     *  - preference of a type use annotation to annotation of another type: KT-24392
+     *      (if @NotNull has TYPE_USE and METHOD target, then `@NotNull Integer []` -> `Array<Int>..Array<out Int>?` instead of `Array<Int>..Array<out Int>`)
+     */
+    ImprovementsAroundTypeEnhancement(KOTLIN_1_6),
 
     // Temporarily disabled, see KT-27084/KT-22379
     SoundSmartcastFromLoopConditionForLoopAssignedVariables(sinceVersion = null, kind = BUG_FIX),
@@ -159,6 +171,7 @@ enum class LanguageFeature(
     MultiPlatformProjects(sinceVersion = null, defaultState = State.DISABLED),
 
     NewInference(sinceVersion = KOTLIN_1_4),
+
     // In the next block, features can be enabled only along with new inference
     SamConversionForKotlinFunctions(sinceVersion = KOTLIN_1_4),
     SamConversionPerArgument(sinceVersion = KOTLIN_1_4),
