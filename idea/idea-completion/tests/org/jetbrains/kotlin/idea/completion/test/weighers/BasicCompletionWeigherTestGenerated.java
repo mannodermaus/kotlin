@@ -485,6 +485,54 @@ public class BasicCompletionWeigherTestGenerated extends AbstractBasicCompletion
         }
     }
 
+    @TestMetadata("idea/idea-completion/testData/weighers/basic/expectedType")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class ExpectedType extends AbstractBasicCompletionWeigherTest {
+        private void runTest(String testDataFilePath) throws Exception {
+            KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
+        }
+
+        public void testAllFilesPresentInExpectedType() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("idea/idea-completion/testData/weighers/basic/expectedType"), Pattern.compile("^([^.]+)\\.(kt|kts)$"), null, true);
+        }
+
+        @TestMetadata("ifCondition.kt")
+        public void testIfCondition() throws Exception {
+            runTest("idea/idea-completion/testData/weighers/basic/expectedType/ifCondition.kt");
+        }
+
+        @TestMetadata("ifConditionQualified.kt")
+        public void testIfConditionQualified() throws Exception {
+            runTest("idea/idea-completion/testData/weighers/basic/expectedType/ifConditionQualified.kt");
+        }
+
+        @TestMetadata("returnFromFunction.kt")
+        public void testReturnFromFunction() throws Exception {
+            runTest("idea/idea-completion/testData/weighers/basic/expectedType/returnFromFunction.kt");
+        }
+
+        @TestMetadata("returnFromFunctionQualifiedSelector.kt")
+        public void testReturnFromFunctionQualifiedSelector() throws Exception {
+            runTest("idea/idea-completion/testData/weighers/basic/expectedType/returnFromFunctionQualifiedSelector.kt");
+        }
+
+        @TestMetadata("returnFromLambda.kt")
+        public void testReturnFromLambda() throws Exception {
+            runTest("idea/idea-completion/testData/weighers/basic/expectedType/returnFromLambda.kt");
+        }
+
+        @TestMetadata("whileCondition.kt")
+        public void testWhileCondition() throws Exception {
+            runTest("idea/idea-completion/testData/weighers/basic/expectedType/whileCondition.kt");
+        }
+
+        @TestMetadata("whileConditionQualified.kt")
+        public void testWhileConditionQualified() throws Exception {
+            runTest("idea/idea-completion/testData/weighers/basic/expectedType/whileConditionQualified.kt");
+        }
+    }
+
     @TestMetadata("idea/idea-completion/testData/weighers/basic/parameterNameAndType")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)
